@@ -1,0 +1,44 @@
+#!/bin/bash
+set -x
+me="$0"
+mydir="`dirname -- "$me"`"
+myname="`basename -- "$me"`"
+
+usage() {
+    echo Usage:
+    echo $myname /full/path/to/mcu/ide/binaries
+}
+
+if [ "_$1" = "_-h" -o "_$1" = "_--help" ]; then
+    usage>&2
+    exit
+fi
+if [ -z "$1" ]; then
+    usage>&2
+    exit
+fi
+redlink="$1/crt_emu_cm_redlink"
+if [ ! -x "$redlink" ]; then
+    echo "can't execute $redlink, wrong path to mcu/ide/binaries?"
+    exit
+fi
+
+dfutil=`which dfu-util`
+if [ ! -x "$dfutil" ]; then
+    echo "can't execute $dfutil, need you install it first?"
+    exit
+fi
+
+$dfutil -l | grep Found
+if [ $? -eq 0 ]; then
+    boot="$1/boot_link2"
+    if [ ! -x "$boot" ]; then
+        echo "can't execute $boot, wrong path to mcu/ide/binaries?"
+        exit
+    fi
+    $boot
+    sleep 3
+fi
+
+#(gdb) target extended-remote | $redlink -g -mi -2 -pLPC1115_303 --vendor NXP -reset= \
+#    --flash-driver LPC11_12_13_64K_8K.cfx -x "$mydir"

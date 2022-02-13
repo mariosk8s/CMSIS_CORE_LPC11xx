@@ -1,0 +1,48 @@
+#!/bin/bash
+#set -x
+me="$0"
+mydir="`dirname -- "$me"`"
+myname="`basename -- "$me"`"
+
+usage() {
+    echo Usage:
+    echo $myname /full/path/to/image.axf /full/path/to/mcu/ide/binaries
+}
+
+if [ "_$1" = "_-h" -o "_$1" = "_--help" ]; then
+    usage>&2
+    exit
+fi
+if [ -z "$1" -o -z "$2" ]; then
+    usage>&2
+    exit
+fi
+if [ ! -r $1 ]; then
+    echo "Can't read $1"
+    exit
+fi
+redlink="$2/crt_emu_cm_redlink"
+if [ ! -x "$redlink" ]; then
+    echo "can't execute $redlink, wrong path to mcu/ide/binaries?"
+    exit
+fi
+
+dfutil=`which dfu-util`
+if [ ! -x "$dfutil" ]; then
+    echo "can't execute $dfutil, need you install it first?"
+    exit
+fi
+
+$dfutil -l | grep Found
+if [ $? -eq 0 ]; then
+    boot="$2/boot_link2"
+    if [ ! -x "$boot" ]; then
+        echo "can't execute $boot, wrong path to mcu/ide/binaries?"
+        exit
+    fi
+    $boot
+    sleep 3
+fi
+
+$redlink --flash-load-exec "$1" -g --debug 2 --vendor NXP -p LPC1115/303 \
+    --flash-driver LPC11_12_13_64K_8K.cfx -x "$mydir"
